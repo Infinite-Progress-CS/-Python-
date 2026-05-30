@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>蟒蛇老师教Python</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- 顶部标题栏 -->
+        <header class="header">
+            <h1>🐍 蟒蛇老师教Python</h1>
+        </header>
+
+        <!-- 工具栏 -->
+        <div class="toolbar">
+            <button class="btn btn-sm" onclick="showStats()" title="查看统计">📊 统计</button>
+            <button class="btn btn-sm" onclick="exportHistory()" title="导出聊天记录">📥 导出</button>
+            <button class="btn btn-sm btn-danger" onclick="clearHistory()" title="清空聊天记录">🗑 清空</button>
+            <span class="status" id="status">✅ 就绪</span>
+        </div>
+
+        <!-- 聊天消息显示区 -->
+        <div class="chat-container" id="chatContainer">
+            <div class="welcome-message">
+                <div class="bot-avatar">🐍</div>
+                <div class="message-content">
+                    <p>你好！我是蟒蛇老师，你的Python编程教练~</p>
+                    <p>今天想学什么？试试问我：</p>
+                    <ul>
+                        <li>🐍 变量和数据类型怎么理解？</li>
+                        <li>🔁 for循环和while循环有什么区别？</li>
+                        <li>📦 什么是函数？怎么定义函数？</li>
+                        <li>🏗 类和对象是什么？怎么写一个类？</li>
+                        <li>📊 Python数据分析怎么入门？</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 输入区 -->
+        <div class="input-area">
+            <input
+                type="text"
+                id="messageInput"
+                class="message-input"
+                placeholder="输入消息，按 Enter 发送..."
+                autocomplete="off"
+                autofocus
+            />
+            <button class="btn btn-primary" id="sendButton" onclick="sendMessage()">
+                发送
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // 前端交互逻辑
+        // 使用 AJAX 异步通信与 Flask 后端交互
+        // ============================================================
+
+        const chatContainer = document.getElementById("chatContainer");
+        const messageInput = document.getElementById("messageInput");
+        const sendButton = document.getElementById("sendButton");
+        const statusEl = document.getElementById("status");
+
+        /**
+         * 将纯文本转为格式化 HTML
+         * 处理: 代码块 ``` 、行内代码 ` 、段落间距、粗体
+         */
+        function formatMessage(text) {
+            if (!text) return "";
+
+            // 1. 保护代码块 ```...``` → 占位符
+            const codeBlocks = [];
+            text = text.replace(/```(\w*)\r?\n?([\s\S]*?)```/g, (_, lang, code) => {
+                codeBlocks.push(code.trim());
+                return `\n%%CB${codeBlocks.length - 1}%%\n`;
+            });
+
+            // 2. 转义 HTML（跳过占位符）
+            let html = text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;");
+
+            // 3. 行内代码 `...`
+            html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
+
+            // 4. 粗体 **...**
+            html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+
+            // 5. 还原代码块为 HTML
+            html = html.replace(/%%CB(\d+)%%/g, (_, i) => {
+                return `<pre><code>${codeBlocks[parseInt(i)]}</code></pre>`;
+            });
+
+            // 6. 按 <pre> 块分割，分别处理文本段和代码段
+            const parts = html.split(/(<pre><code>[\s\S]*?<\/code><\/pre>)/g);
+            html = parts.map(part => {
+                if (part.startsWith("<pre>")) return part; // 代码块原样保留
+                // 文本段：双换行 → 段落
+                return part
+                    .split(/\n\n+/)
+                    .map(p => p.trim())
+                    .filter(p => p)
+                    .map(p => `<p>${p.replace(/\n/g, "<br>")}</p>`)
+                    .join("");
+            }).join("");
+
+            return html;
+        }
+
+        /**
+         * 发送消息到后端（流式 + 打字动画 + Markdown 渲染）
+         */
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            appendMessage("user", message);
+            messageInput.value = "";
+            sendButton.disabled = true;
+
+            const botMsgDiv = appendMessage("bot", "");
+            const contentDiv = botMsgDiv.querySelector(".message-content");
+
+            setStatus("🐍 蟒蛇老师正在输入...", "loading");
+
+            // 打字机状态
+            let pendingText = "";
+            let streamDone = false;
+            let cursor = 0;
+            let typeTimer = null;
+
+            function typeNext() {
+                if (cursor < pendingText.length) {
+                    cursor += 1;
+                    // 打字中用 textContent 显示纯文本（保证流畅）
+                    contentDiv.textContent = pendingText.slice(0, cursor);
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                    typeTimer = setTimeout(typeNext, 25 + Math.random() * 35);
+                } else if (streamDone) {
+                    // 打字完成 → 渲染为格式化 HTML
+                    clearTimeout(typeTimer);
+                    contentDiv.innerHTML = formatMessage(pendingText);
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                    setStatus("✅ 就绪", "ready");
+                    sendButton.disabled = false;
+                    messageInput.focus();
+                } else {
+                    typeTimer = setTimeout(typeNext, 60);
+                }
+            }
+            typeTimer = setTimeout(typeNext, 120);
+
+            // SSE 流式接收
+            try {
+                const response = await fetch("/api/chat/stream", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: message }),
+                });
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let lineBuffer = "";
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    lineBuffer += decoder.decode(value, { stream: true });
+                    const lines = lineBuffer.split("\n\n");
+                    lineBuffer = lines.pop();
+                    for (const line of lines) {
+                        if (line.startsWith("data: ")) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                if (data.status === "streaming") {
+                                    pendingText += data.chunk;
+                                } else if (data.status === "done") {
+                                    streamDone = true;
+                                } else if (data.status === "error") {
+                                    pendingText += data.chunk;
+                                    streamDone = true;
+                                }
+                            } catch (e) {}
+                        }
+                    }
+                }
+            } catch (error) {
+                if (!pendingText) pendingText = "网络连接错误，请检查服务器是否运行。";
+                streamDone = true;
+            }
+            streamDone = true;
+        }
+
+        /**
+         * 向聊天显示区追加消息
+         * @param {string} role - "user" 或 "bot"
+         * @param {string} content - 消息文本
+         * @returns {HTMLElement} 消息 DOM 元素
+         */
+        function appendMessage(role, content) {
+            const messageDiv = document.createElement("div");
+            messageDiv.className = `message ${role}-message`;
+
+            const avatar = document.createElement("div");
+            avatar.className = "avatar";
+            avatar.textContent = role === "user" ? "👤" : "🐍";
+
+            const contentDiv = document.createElement("div");
+            contentDiv.className = "message-content";
+            contentDiv.textContent = content;
+
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(contentDiv);
+            chatContainer.appendChild(messageDiv);
+
+            // 滚动到底部
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            return messageDiv;
+        }
+
+        /**
+         * 显示统计信息
+         */
+        async function showStats() {
+            try {
+                const response = await fetch("/api/stats");
+                const stats = await response.json();
+
+                let info = "📊 聊天统计信息\n\n";
+                info += `总消息数: ${stats.total_messages}\n`;
+                info += `用户消息: ${stats.user_messages}\n`;
+                info += `机器人消息: ${stats.bot_messages}\n`;
+                info += `知识库话题: ${stats.knowledge_base_topics}\n`;
+                info += `规则匹配: ${stats.rule_enabled ? "开启" : "关闭"}\n`;
+                info += `API调用: ${stats.api_enabled ? "开启" : "关闭"}`;
+
+                alert(info);
+            } catch (error) {
+                alert("获取统计信息失败");
+            }
+        }
+
+        /**
+         * 导出聊天记录为 TXT
+         */
+        async function exportHistory() {
+            try {
+                const response = await fetch("/api/export");
+                const data = await response.json();
+                if (data.status === "success") {
+                    alert(data.message);
+                }
+            } catch (error) {
+                alert("导出失败");
+            }
+        }
+
+        /**
+         * 清空聊天记录
+         */
+        async function clearHistory() {
+            if (!confirm("确认清空所有聊天记录？此操作不可撤销。")) return;
+
+            try {
+                await fetch("/api/clear", { method: "POST" });
+                // 清空显示区，保留欢迎消息
+                chatContainer.innerHTML = `
+                    <div class="welcome-message">
+                        <div class="bot-avatar">🐍</div>
+                        <div class="message-content">
+                            <p>聊天记录已清空，开始新对话吧~</p>
+                        </div>
+                    </div>
+                `;
+                setStatus("✅ 已清空", "ready");
+            } catch (error) {
+                alert("清空失败");
+            }
+        }
+
+        /**
+         * 更新状态指示器
+         */
+        function setStatus(text, type) {
+            statusEl.textContent = text;
+            statusEl.className = `status status-${type}`;
+        }
+
+        // ============================================================
+        // 事件监听
+        // ============================================================
+
+        // Enter 键发送消息
+        messageInput.addEventListener("keydown", function (event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // 页面加载完成后聚焦输入框
+        window.addEventListener("load", function () {
+            messageInput.focus();
+        });
+    </script>
+</body>
+</html>

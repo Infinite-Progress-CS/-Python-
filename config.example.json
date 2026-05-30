@@ -1,0 +1,10 @@
+{
+    "api_key": "在此填入你的硅基流动 API Key",
+    "model_name": "deepseek-ai/DeepSeek-V3",
+    "max_history": 100,
+    "enable_api": true,
+    "enable_rule": true,
+    "app_name": "蟒蛇老师教Python",
+    "version": "1.0.0",
+    "author": "Python期末大作业"
+}
