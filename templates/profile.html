@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>个人中心 - 蟒蛇老师教Python</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+    font-family: "Microsoft YaHei","PingFang SC",sans-serif;
+    background: #f0f4ee; min-height: 100vh;
+}
+.topbar {
+    display: flex; align-items: center; gap: 16px;
+    padding: 0 24px; height: 52px;
+    background: #122618; color: #fff;
+}
+.topbar a { color: #52b788; text-decoration: none; font-size: 14px; }
+.topbar a:hover { color: #ffd43b; }
+.topbar-title { font-size: 16px; font-weight: 700; color: #ffd43b; flex: 1; }
+
+.container { max-width: 800px; margin: 32px auto; padding: 0 20px; }
+
+/* 个人信息卡片 */
+.profile-card {
+    background: #fff; border-radius: 16px; padding: 32px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+    display: flex; gap: 24px; align-items: center;
+    margin-bottom: 24px;
+}
+.avatar-display {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: #2d6a4f; display: flex;
+    align-items: center; justify-content: center;
+    font-size: 40px; flex-shrink: 0; cursor: pointer;
+    transition: transform 0.2s; position: relative;
+}
+.avatar-display:hover { transform: scale(1.1); }
+.avatar-edit-hint {
+    position: absolute; bottom: -4px; right: -4px;
+    background: #306998; color: #fff; font-size: 10px;
+    padding: 2px 6px; border-radius: 8px;
+}
+.profile-info { flex: 1; }
+.profile-name { font-size: 22px; font-weight: 700; color: #1b4332; }
+.profile-id { font-size: 13px; color: #888; margin: 4px 0; }
+.profile-date { font-size: 13px; color: #aaa; }
+
+/* 统计 */
+.stats-row { display: flex; gap: 16px; margin-bottom: 24px; }
+.stat-card {
+    flex: 1; background: #fff; border-radius: 12px;
+    padding: 20px; text-align: center;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+.stat-num { font-size: 28px; font-weight: 700; color: #2d6a4f; }
+.stat-label { font-size: 13px; color: #888; margin-top: 4px; }
+
+/* 头像选择面板 */
+.section-title { font-size: 16px; font-weight: 700; color: #1b4332; margin-bottom: 12px; }
+.avatar-grid {
+    display: flex; flex-wrap: wrap; gap: 10px;
+    background: #fff; border-radius: 12px;
+    padding: 16px; margin-bottom: 24px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+.avatar-option {
+    width: 48px; height: 48px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; cursor: pointer; border: 3px solid transparent;
+    transition: all 0.15s;
+}
+.avatar-option:hover { border-color: #52b788; transform: scale(1.1); }
+.avatar-option.selected { border-color: #2d6a4f; background: #e8f5e9; }
+
+/* 历史对话列表 */
+.history-list { background: #fff; border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04); overflow: hidden; }
+.history-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px; border-bottom: 1px solid #f0f0f0;
+    cursor: pointer; transition: background 0.15s;
+}
+.history-item:hover { background: #f8faf5; }
+.history-item:last-child { border-bottom: none; }
+.history-title { font-size: 14px; color: #333; flex: 1; }
+.history-time { font-size: 12px; color: #aaa; margin-right: 16px; }
+.history-arrow { color: #52b788; font-size: 18px; }
+.empty-state { text-align: center; padding: 40px; color: #aaa; font-size: 14px; }
+
+.back-btn {
+    display: inline-block; margin-top: 8px;
+    padding: 8px 20px; background: #2d6a4f; color: #fff;
+    border-radius: 8px; text-decoration: none; font-size: 14px;
+}
+.back-btn:hover { background: #1b4332; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+    <span class="topbar-title"> 个人中心</span>
+    <a href="/chat">返回课堂</a>
+    <a href="/" onclick="localStorage.clear()">退出登录</a>
+</div>
+
+<div class="container">
+    <!-- 个人信息卡片 -->
+    <div class="profile-card">
+        <div class="avatar-display" id="avatarDisplay" onclick="scrollToAvatars()" title="点击更换头像">
+            <span id="currentAvatar"></span>
+            <span class="avatar-edit-hint">换头像</span>
+        </div>
+        <div class="profile-info">
+            <div class="profile-name" id="profileName"></div>
+            <div class="profile-id">ID: <span id="profileId"></span></div>
+            <div class="profile-date">加入于: <span id="profileDate"></span></div>
+        </div>
+    </div>
+
+    <!-- 统计 -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-num" id="statConvs">0</div>
+            <div class="stat-label">历史对话</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-num" id="statMsgs">0</div>
+            <div class="stat-label">总消息数</div>
+        </div>
+    </div>
+
+    <!-- 头像选择 -->
+    <div class="section-title"> 选择头像</div>
+    <div class="avatar-grid" id="avatarGrid"></div>
+
+    <!-- 历史对话 -->
+    <div class="section-title"> 历史对话</div>
+    <div class="history-list" id="historyList"></div>
+    <br>
+    <a href="/chat" class="back-btn"> 返回课堂</a>
+</div>
+
+<script>
+const USER_ID = parseInt(localStorage.getItem("user_id"));
+if (!USER_ID) { location.href = "/"; }
+
+const AVATARS = [
+    "\u{1F40D}", "\u{1F468}‍\u{1F3EB}", "\u{1F469}‍\u{1F3EB}",
+    "\u{1F9D1}‍\u{1F3EB}", "\u{1F916}", "\u{1F4DA}",
+    "\u{1F525}", "\u{1F308}", "\u{1F98A}", "\u{1F680}",
+    "\u{1F33B}", "\u{1F92F}", "\u{1F60E}", "\u{1F389}",
+    "\u{1F48E}", "\u{2B50}", "\u{1F31F}", "\u{1F996}",
+];
+
+let currentAvatar = "\u{1F40D}";
+
+async function loadProfile() {
+    const r = await fetch(`/api/profile?user_id=${USER_ID}`);
+    const d = await r.json();
+    const p = d.profile;
+    currentAvatar = p.avatar || "\u{1F40D}";
+
+    document.getElementById("currentAvatar").textContent = currentAvatar;
+    document.getElementById("profileName").textContent = p.username;
+    document.getElementById("profileId").textContent = p.id;
+    document.getElementById("profileDate").textContent = p.created_at;
+    document.getElementById("statConvs").textContent = d.stats.total_conversations;
+    document.getElementById("statMsgs").textContent = d.stats.total_messages;
+
+    // 头像网格
+    const grid = document.getElementById("avatarGrid");
+    grid.innerHTML = AVATARS.map(a => `
+        <div class="avatar-option ${a === currentAvatar ? 'selected' : ''}"
+             onclick="changeAvatar('${a}')">${a}</div>
+    `).join("");
+
+    // 历史对话
+    const list = document.getElementById("historyList");
+    if (d.conversations.length === 0) {
+        list.innerHTML = '<div class="empty-state">暂无历史对话，去课堂开始学习吧</div>';
+    } else {
+        list.innerHTML = d.conversations.map(c => `
+            <div class="history-item" onclick="openConversation(${c.id})">
+                <span class="history-title">${escHtml(c.title)}</span>
+                <span class="history-time">${c.created_at}</span>
+                <span class="history-arrow">&rsaquo;</span>
+            </div>
+        `).join("");
+    }
+}
+
+async function changeAvatar(avatar) {
+    await fetch("/api/profile/avatar", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({user_id: USER_ID, avatar})
+    });
+    currentAvatar = avatar;
+    document.getElementById("currentAvatar").textContent = avatar;
+    // 更新选中状态
+    document.querySelectorAll(".avatar-option").forEach(el => {
+        el.classList.toggle("selected", el.textContent === avatar);
+    });
+}
+
+function scrollToAvatars() {
+    document.getElementById("avatarGrid").scrollIntoView({behavior: "smooth"});
+}
+
+function openConversation(cid) {
+    // 先选会话再跳转
+    fetch(`/api/conversations/${cid}/select`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({user_id: USER_ID})
+    }).then(() => { location.href = "/chat"; });
+}
+
+function escHtml(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+
+loadProfile();
+</script>
+</body>
+</html>

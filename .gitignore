@@ -16,6 +16,9 @@ test_export.txt
 # 知识库（运行时自动生成）
 knowledge_base.json
 
+# 课程作业（不提交）
+课程作业及报告/
+
 # IDE
 .idea/
 .vscode/
@@ -34,3 +37,10 @@ env/
 # 临时测试文件
 test_*.py
 quick_test.py
+
+# 数据库文件（运行时生成）
+chatbot.db
+
+# 生成脚本（工具文件）
+generate_ppt.py
+generate_report.py
