@@ -44,3 +44,4 @@ chatbot.db
 # 生成脚本（工具文件）
 generate_ppt.py
 generate_report.py
+students.json

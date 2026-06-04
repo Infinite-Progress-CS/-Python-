@@ -88,6 +88,22 @@ body {
 .history-arrow { color: #52b788; font-size: 18px; }
 .empty-state { text-align: center; padding: 40px; color: #aaa; font-size: 14px; }
 
+.diff-badge {
+    display: inline-block; padding: 2px 10px; border-radius: 10px;
+    font-size: 11px; font-weight: 600; margin-right: 8px;
+}
+.diff-简单 { background: #e8f5e9; color: #2d6a4f; }
+.diff-中等 { background: #fff8e1; color: #e6a817; }
+.diff-困难 { background: #fce4e4; color: #d32f2f; }
+
+.score-badge {
+    display: inline-block; padding: 3px 10px; border-radius: 10px;
+    font-size: 13px; font-weight: 600; margin-right: 12px;
+    background: #e8e8e8; color: #666;
+}
+.score-badge.good { background: #e8f5e9; color: #2d6a4f; }
+.score-badge.perfect { background: #2d6a4f; color: #fff; }
+
 .back-btn {
     display: inline-block; margin-top: 8px;
     padding: 8px 20px; background: #2d6a4f; color: #fff;
@@ -133,6 +149,13 @@ body {
     <!-- 头像选择 -->
     <div class="section-title"> 选择头像</div>
     <div class="avatar-grid" id="avatarGrid"></div>
+
+    <!-- 自测成绩单 -->
+    <div class="section-title"> 自测成绩单</div>
+    <div class="history-list" id="quizScoresList">
+        <div class="empty-state">加载中...</div>
+    </div>
+    <br>
 
     <!-- 历史对话 -->
     <div class="section-title"> 历史对话</div>
@@ -219,7 +242,34 @@ function openConversation(cid) {
 
 function escHtml(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
 
+// 加载自测成绩
+async function loadQuizScores() {
+    try {
+        const r = await fetch(`/api/quiz/scores?user_id=${USER_ID}`);
+        const d = await r.json();
+        const list = document.getElementById("quizScoresList");
+        if (d.scores.length === 0) {
+            list.innerHTML = '<div class="empty-state">暂无自测成绩，去课堂完成自测吧</div>';
+        } else {
+            list.innerHTML = d.scores.map(s => `
+                <div class="history-item">
+                    <span class="history-title">第${s.chapter}章 ${getChapterName(s.chapter)}</span>
+                    <span class="score-badge ${s.score >= s.total ? 'perfect' : s.score >= s.total*0.8 ? 'good' : ''}">${s.score}/${s.total}</span>
+                    <span class="history-time">${s.time}</span>
+                </div>
+            `).join("");
+        }
+    } catch(e) {}
+}
+
+function getChapterName(ch) {
+    const names = {"01":"Python入门","02":"变量和数据类型","03":"条件判断","04":"循环","05":"列表","06":"元组","07":"字典","08":"函数","09":"类与对象","10":"继承与派生","11":"文件读写","12":"异常处理","13":"猜数字游戏","14":"数据分析","15":"成绩管理系统"};
+    return names[ch] || "";
+}
+
 loadProfile();
+loadQuizScores();
 </script>
+</body>
 </body>
 </html>

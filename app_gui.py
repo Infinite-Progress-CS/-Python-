@@ -15,12 +15,13 @@ from datetime import datetime
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from chatbot_core import ChatBot
 
-# 常用表情列表
+# 常用表情列表（50个）
 EMOJI_PANEL = [
-    "😀", "😂", "🤣", "😊", "😍", "🤔", "😅", "😢",
-    "👍", "👎", "👏", "💪", "🙏", "❤", "🔥", "🎉",
-    "🌟", "✨", "🍵", "☕", "🍰", "🎂", "🐍", "💻",
-    "📚", "💡", "✅", "❌", "⏰", "🌈", "🎵", "😎",
+    "😀","😂","🤣","😊","😍","🤔","😅","😢","😎","🥳",
+    "👍","👎","👏","💪","🙏","❤","🔥","🎉","🌟","✨",
+    "🐍","💻","📚","💡","✅","❌","⏰","🌈","🎵","🍵",
+    "☕","🍰","🎂","🚀","⭐","🏆","💯","🤖","👋","😱",
+    "🙂","😋","🤩","😤","🥺","😴","🤗","🙃","😜","🫡",
 ]
 
 
@@ -308,23 +309,26 @@ class ChatAppGUI:
 
     def _show_about(self):
         messagebox.showinfo("关于",
-            "蟒蛇老师教Python v1.0\n\n"
-            "Python + DeepSeek-V3 + Tkinter\n\n"
+            "蟒蛇老师教Python v2.0\n\n"
+            "AI编程教学聊天机器人\n"
+            "DeepSeek-V3 + Python + Tkinter\n\n"
+            "功能: 流式对话 · 15个知识点 · 自测 · 刷题\n"
             "数据结构: list | dict | set | tuple\n"
             "文件读写: JSON | TXT\n"
+            "数据库: SQLite\n"
             "第三方库: requests | jieba | flask"
         )
 
     def _show_help(self):
         messagebox.showinfo("使用帮助",
-            "[使用帮助]\n\n"
-            "1. 在底部输入框中输入消息\n"
-            '2. 按 Enter 键或点击「发送」按钮\n'
-            "3. 机器人会流式逐字回复\n\n"
-            "表情面板:\n"
-            "  点击表情按钮即可插入到输入框\n\n"
-            "右键菜单:\n"
-            "  导出聊天记录 / 清空记录\n"
+            "[蟒蛇老师教Python - 使用帮助]\n\n"
+            "1. 在输入框中输入Python相关问题\n"
+            '2. 按 Enter 或点击「发送」\n'
+            "3. 蟒蛇老师会流式逐字回复\n\n"
+            "表情面板: 点击表情按钮插入Emoji\n"
+            "Web端更多功能:\n"
+            "  学习路线 · 自测 · 编程刷题 · 个人中心\n"
+            "  访问 http://127.0.0.1:5000"
         )
 
     def _update_status(self, text):

@@ -112,6 +112,7 @@ body {
 .main-chat {
     flex: 1; display: flex; flex-direction: column;
     background: #f0f4ee; min-width: 0;
+    position: relative;
 }
 
 /* 顶部栏 */
@@ -251,6 +252,7 @@ body {
     display: flex; gap: 10px;
     padding: 14px 20px; background: #fff;
     border-top: 1px solid #d8e2d4; flex-shrink: 0;
+    position: relative;
 }
 .msg-input {
     flex: 1; padding: 10px 16px;
@@ -260,6 +262,31 @@ body {
 }
 .msg-input:focus { border-color: #52b788; background: #fff;
     box-shadow: 0 0 0 3px rgba(82,183,136,0.12); }
+
+/* 表情按钮和面板 */
+.emoji-toggle {
+    width: 40px; height: 40px; border: none; border-radius: 50%;
+    background: #f0f4ee; font-size: 20px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s; flex-shrink: 0;
+}
+.emoji-toggle:hover { background: #d8e8d8; }
+.emoji-panel {
+    position: absolute; bottom: 70px; left: 20px;
+    background: #fff; border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+    padding: 10px; z-index: 100; width: 340px;
+}
+.emoji-grid {
+    display: flex; flex-wrap: wrap; gap: 4px;
+}
+.emoji-item {
+    width: 32px; height: 32px; display: flex;
+    align-items: center; justify-content: center;
+    font-size: 20px; cursor: pointer; border-radius: 6px;
+    transition: background 0.1s;
+}
+.emoji-item:hover { background: #e8f0e8; transform: scale(1.2); }
 .send-btn {
     padding: 10px 28px; background: #2d6a4f; color: #fff;
     border: none; border-radius: 24px; font-size: 15px;
@@ -339,6 +366,52 @@ body {
     background: #2d6a4f; color: #fff;
 }
 .lesson-btn.primary:hover { background: #1b4332; }
+.lesson-btn.quiz-btn {
+    background: #306998; color: #fff; margin-left: 8px;
+}
+.lesson-btn.quiz-btn:hover { background: #1f4a6e; }
+
+/* ======== 自测弹窗 ======== */
+.quiz-modal-box { max-height: 80vh; max-width: 650px; }
+.quiz-body { padding: 16px 20px; overflow-y: auto; max-height: 55vh; }
+.quiz-q { margin-bottom: 16px; }
+.quiz-q-title { font-size: 14px; font-weight: 600; color: #1b4332; margin-bottom: 6px; }
+.quiz-opts { display: flex; flex-direction: column; gap: 4px; padding-left: 8px; }
+.quiz-opt {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 10px; border-radius: 6px; cursor: pointer;
+    font-size: 13px; color: #444; transition: background 0.15s;
+}
+.quiz-opt:hover { background: #f0f4ee; }
+.quiz-opt input[type="radio"] { accent-color: #2d6a4f; }
+.quiz-footer { padding: 12px 20px; text-align: center; border-top: 1px solid #333; }
+.quiz-submit-btn {
+    padding: 10px 36px; background: #2d6a4f; color: #fff;
+    border: none; border-radius: 8px; font-size: 15px;
+    font-weight: 600; cursor: pointer;
+}
+.quiz-submit-btn:hover { background: #1b4332; }
+.quiz-result { text-align: center; padding: 30px; }
+.quiz-score { font-size: 48px; font-weight: 700; color: #2d6a4f; }
+.quiz-msg { font-size: 16px; color: #555; margin: 8px 0; }
+.quiz-best { font-size: 13px; color: #306998; margin-top: 6px; }
+.quiz-breakdown { font-size: 13px; color: #888; margin: 4px 0; }
+.quiz-detail { text-align: left; margin-top: 16px; max-height: 300px; overflow-y: auto; }
+.qd-item { padding: 8px 12px; margin: 4px 0; border-radius: 6px; font-size: 13px; }
+.qd-ok { background: #e8f5e9; border-left: 3px solid #52b788; }
+.qd-err { background: #fff3f3; border-left: 3px solid #e85050; }
+.qd-tag { display: inline-block; padding: 1px 8px; border-radius: 8px; font-size: 11px; font-weight: 700; margin-right: 6px; }
+.qd-ok .qd-tag { background: #52b788; color: #fff; }
+.qd-err .qd-tag { background: #e85050; color: #fff; }
+.qd-label { font-weight: 600; color: #333; }
+.qd-info { font-size: 12px; color: #888; margin: 2px 0 0 30px; }
+.qd-exp { font-size: 12px; color: #555; margin: 4px 0 0 30px; padding: 6px 10px; background: #fff; border-radius: 4px; border: 1px solid #eee; }
+.blank-input {
+    width: 100%; padding: 8px 12px; margin-top: 4px;
+    border: 1px solid #d0d8d0; border-radius: 6px;
+    font-size: 14px; outline: none;
+}
+.blank-input:focus { border-color: #52b788; }
 
 /* ======== 响应式 ======== */
 @media (max-width: 700px) {

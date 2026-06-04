@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>编程刷题 - 蟒蛇老师教Python</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; background:#0d1f14; height:100vh; overflow:hidden; }
+.topbar {
+    display:flex; align-items:center; gap:16px;
+    padding:0 20px; height:48px; background:#122618;
+    color:#fff; flex-shrink:0;
+}
+.topbar a { color:#52b788; text-decoration:none; font-size:13px; }
+.topbar a:hover { color:#ffd43b; }
+.topbar-title { font-size:15px; font-weight:700; color:#ffd43b; flex:1; }
+.layout { display:flex; height:calc(100vh - 48px); }
+
+/* 左侧题目区 */
+.left-panel {
+    width:380px; min-width:300px; background:#122618;
+    border-right:1px solid #1e3a2a; display:flex; flex-direction:column;
+}
+.panel-header {
+    padding:14px 18px; border-bottom:1px solid #1e3a2a;
+    font-size:14px; font-weight:700; color:#52b788;
+}
+.problem-list { flex:1; overflow-y:auto; padding:8px; }
+.problem-item {
+    padding:12px 14px; margin:2px 0; border-radius:8px;
+    cursor:pointer; transition:background 0.15s;
+    display:flex; align-items:center; gap:10px;
+}
+.problem-item:hover { background:#1e3a2a; }
+.problem-item.active { background:#1e3a2a; border-left:3px solid #52b788; }
+.p-num { font-size:18px; font-weight:700; color:#52b788; width:28px; }
+.p-info { flex:1; }
+.p-title { font-size:14px; color:#e0e8e0; }
+.p-desc { font-size:11px; color:#6a8a6a; margin-top:2px; }
+.diff-tag {
+    display:inline-block; padding:1px 8px; border-radius:8px;
+    font-size:10px; font-weight:600;
+}
+.diff-简单 { background:#1a3a2a; color:#52b788; }
+.diff-中等 { background:#3a2a0a; color:#ffd43b; }
+.diff-困难 { background:#3a1a1a; color:#e85050; }
+
+/* 右侧编码区 */
+.right-panel { flex:1; display:flex; flex-direction:column; background:#1e1e1e; }
+.desc-area {
+    padding:16px 20px; background:#252526; border-bottom:1px solid #333;
+    color:#ccc; font-size:14px; line-height:1.7;
+    max-height:200px; overflow-y:auto; flex-shrink:0;
+}
+.desc-area h3 { color:#52b788; font-size:17px; margin-bottom:6px; }
+.desc-hint { color:#ffd43b; font-size:12px; margin-top:8px; padding:8px 12px; background:#2a2a1a; border-radius:6px; }
+.code-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:8px 20px; background:#2d2d2d; border-bottom:1px solid #333;
+    flex-shrink:0;
+}
+.code-lang { font-size:12px; color:#888; }
+.code-editor {
+    flex:1; padding:16px 20px; background:#1e1e1e; color:#d4d4d4;
+    font-family:"Consolas","Courier New","Microsoft YaHei",monospace;
+    font-size:14px; line-height:1.6; border:none; outline:none;
+    resize:none; tab-size:4;
+}
+.toolbar {
+    display:flex; align-items:center; gap:10px;
+    padding:10px 20px; background:#252526; border-top:1px solid #333;
+    flex-shrink:0;
+}
+.submit-btn {
+    padding:8px 28px; background:#2d6a4f; color:#fff;
+    border:none; border-radius:6px; font-size:14px;
+    font-weight:600; cursor:pointer;
+}
+.submit-btn:hover { background:#1b4332; }
+.submit-btn:disabled { opacity:0.5; cursor:not-allowed; }
+.result-area {
+    max-height:250px; overflow-y:auto; padding:0 20px 10px;
+    background:#252526; flex-shrink:0;
+}
+.result-item {
+    padding:6px 12px; margin:4px 0; border-radius:4px;
+    font-size:12px; font-family:monospace;
+}
+.result-pass { background:#1a3a2a; color:#52b788; border-left:3px solid #52b788; }
+.result-fail { background:#3a1a1a; color:#e85050; border-left:3px solid #e85050; }
+.result-summary { font-size:15px; font-weight:700; padding:8px 0; }
+.summary-pass { color:#52b788; }
+.summary-fail { color:#e85050; }
+
+.empty-hint { color:#6a8a6a; text-align:center; padding:40px; font-size:14px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+    <span class="topbar-title">  编程刷题</span>
+    <a href="/chat">返回课堂</a>
+    <a href="/profile">个人中心</a>
+    <a href="/" onclick="localStorage.clear()">退出</a>
+</div>
+
+<div class="layout">
+    <!-- 左侧：题目列表 -->
+    <div class="left-panel">
+        <div class="panel-header">  题目列表</div>
+        <div class="problem-list" id="problemList">
+            <div class="empty-hint">加载中...</div>
+        </div>
+    </div>
+
+    <!-- 右侧：编码区 -->
+    <div class="right-panel" id="rightPanel">
+        <div class="desc-area" id="descArea">
+            <div class="empty-hint">  选择左侧题目开始刷题</div>
+        </div>
+        <div class="code-header">
+            <span class="code-lang">Python 3</span>
+            <span style="font-size:11px;color:#888" id="problemTitle"></span>
+        </div>
+        <textarea class="code-editor" id="codeEditor" placeholder="# 选择题目后，在此编写代码...
+# 代码应包含测试用例指定的函数定义
+# 提交后将自动运行并比对输出" spellcheck="false"></textarea>
+        <div class="toolbar">
+            <button class="submit-btn" id="submitBtn" onclick="submitCode()" disabled>  提交评测</button>
+            <span style="font-size:12px;color:#888">Ctrl+Enter 快捷提交</span>
+        </div>
+        <div class="result-area" id="resultArea"></div>
+    </div>
+</div>
+
+<script>
+const USER_ID = parseInt(localStorage.getItem("user_id"));
+if (!USER_ID) { location.href = "/"; }
+
+let currentProblem = null;
+let problems = [];
+
+async function loadProblems() {
+    try {
+        const r = await fetch("/api/problems");
+        const d = await r.json();
+        problems = d.problems;
+        document.getElementById("problemList").innerHTML = problems.map(p => `
+            <div class="problem-item" id="pitem${p.id}" onclick="selectProblem(${p.id})">
+                <span class="p-num">${p.id}</span>
+                <div class="p-info">
+                    <div class="p-title">${p.title}</div>
+                    <div class="p-desc">${p.desc.substring(0,40)}...</div>
+                </div>
+                <span class="diff-tag diff-${p.difficulty}">${p.difficulty}</span>
+            </div>
+        `).join("");
+    } catch(e) {}
+}
+
+async function selectProblem(pid) {
+    document.querySelectorAll(".problem-item").forEach(el => el.classList.remove("active"));
+    document.getElementById("pitem"+pid).classList.add("active");
+
+    const r = await fetch(`/api/problems/${pid}`);
+    const d = await r.json();
+    currentProblem = d.problem;
+
+    document.getElementById("descArea").innerHTML = `
+        <h3>${currentProblem.id}. ${currentProblem.title} <span class="diff-tag diff-${currentProblem.difficulty}">${currentProblem.difficulty}</span></h3>
+        <p>${currentProblem.desc}</p>
+        ${currentProblem.hint ? `<div class="desc-hint">  ${currentProblem.hint}</div>` : ''}
+    `;
+    document.getElementById("problemTitle").textContent = currentProblem.title;
+    document.getElementById("codeEditor").value = currentProblem.template;
+    document.getElementById("resultArea").innerHTML = "";
+    document.getElementById("submitBtn").disabled = false;
+}
+
+async function submitCode() {
+    if (!currentProblem) return;
+    const code = document.getElementById("codeEditor").value;
+    const btn = document.getElementById("submitBtn");
+    btn.disabled = true; btn.textContent = "评测中...";
+
+    try {
+        const r = await fetch(`/api/problems/${currentProblem.id}/submit`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({code})
+        });
+        const d = await r.json();
+        document.getElementById("resultArea").innerHTML = `
+            <div class="result-summary ${d.all_pass?'summary-pass':'summary-fail'}">
+                ${d.all_pass ? '  全部通过！' : '  ' + d.passed + '/' + d.total + ' 通过'}
+            </div>
+            ${d.results.map((r,i) => `
+                <div class="result-item ${r.ok?'result-pass':'result-fail'}">
+                    <strong>测试${i+1}:</strong> ${r.ok?' 通过':' 失败'}
+                    | 期望: ${r.expected}
+                    | 实际: ${r.actual}
+                    ${r.error ? ' | 错误: '+r.error : ''}
+                </div>
+            `).join("")}
+        `;
+    } catch(e) {
+        document.getElementById("resultArea").innerHTML = `<div class="result-item result-fail">请求失败: ${e.message}</div>`;
+    }
+    btn.disabled = false; btn.textContent = "  提交评测";
+}
+
+// 快捷键
+document.getElementById("codeEditor").addEventListener("keydown", e => {
+    if (e.ctrlKey && e.key === "Enter") submitCode();
+});
+
+loadProblems();
+</script>
+</body>
+</html>

@@ -39,6 +39,7 @@
     </div>
 
     <div class="sidebar-footer">
+        <button class="side-btn" onclick="location.href='/practice'">编程刷题</button>
         <button class="side-btn" onclick="location.href='/profile'">个人中心</button>
         <button class="side-btn" onclick="localStorage.clear();location.href='/'">退出登录</button>
         <span class="api-badge">DeepSeek-V3</span>
@@ -67,9 +68,14 @@
     </div>
 
     <div class="input-area">
+        <button class="emoji-toggle" id="emojiBtn" onclick="toggleEmoji()" title="表情">😊</button>
         <input type="text" id="messageInput" class="msg-input"
                placeholder="输入Python相关问题，按Enter发送..." autocomplete="off" autofocus>
         <button class="send-btn" id="sendButton" onclick="sendMessage()">发送</button>
+    </div>
+    <!-- 表情面板 -->
+    <div class="emoji-panel" id="emojiPanel" style="display:none">
+        <div class="emoji-grid" id="emojiGrid"></div>
     </div>
 </main>
 
@@ -78,6 +84,20 @@
     <div class="modal-box" onclick="event.stopPropagation()">
         <div class="modal-header"><span>代码运行结果</span><button class="modal-close" onclick="closeCodeModal()">X</button></div>
         <pre class="modal-output" id="codeOutput"></pre>
+    </div>
+</div>
+
+<!-- 自测弹窗 -->
+<div class="modal-overlay" id="quizModal" onclick="closeQuizModal(event)">
+    <div class="modal-box quiz-modal-box" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <span id="quizTitle">自测</span>
+            <button class="modal-close" onclick="closeQuizModal()">X</button>
+        </div>
+        <div class="quiz-body" id="quizBody"></div>
+        <div class="quiz-footer">
+            <button class="quiz-submit-btn" id="quizSubmitBtn" onclick="submitQuiz()">提交</button>
+        </div>
     </div>
 </div>
 
@@ -218,6 +238,7 @@ async function showLesson(topicId, fallbackQ) {
             <pre><code class="language-python">${escHtml(L.code)}</code></pre>
             <div class="lesson-actions">
                 <button class="lesson-btn primary" onclick="sendPreset('${L.ask.replace(/'/g, "\\'")}')"> 让蟒蛇老师详细讲解</button>
+                <button class="lesson-btn quiz-btn" onclick="openQuiz('${topicId}')"> 自测</button>
             </div>
         `;
         document.getElementById("chatContainer").appendChild(card);
@@ -421,6 +442,47 @@ async function loadUserAvatar() {
 }
 
 // ================================================================
+// 表情面板
+// ================================================================
+const EMOJIS = [
+    "😀","😂","🤣","😊","😍","🤔","😅","😢","😎","🥳",
+    "👍","👎","👏","💪","🙏","❤","🔥","🎉","🌟","✨",
+    "🐍","💻","📚","💡","✅","❌","⏰","🌈","🎵","🍵",
+    "☕","🍰","🎂","🚀","⭐","🏆","💯","🤖","👋","😱",
+    "🙂","😋","🤩","😤","🥺","😴","🤗","🫡","🙃","😜",
+];
+
+function buildEmojiGrid() {
+    document.getElementById("emojiGrid").innerHTML = EMOJIS.map(e =>
+        `<span class="emoji-item" onclick="insertEmoji('${e}')">${e}</span>`
+    ).join("");
+}
+
+function toggleEmoji() {
+    const panel = document.getElementById("emojiPanel");
+    panel.style.display = panel.style.display === "none" ? "block" : "none";
+}
+
+function insertEmoji(emoji) {
+    const inp = document.getElementById("messageInput");
+    const pos = inp.selectionStart;
+    const before = inp.value.substring(0, pos);
+    const after = inp.value.substring(pos);
+    inp.value = before + emoji + after;
+    inp.focus();
+    inp.selectionStart = inp.selectionEnd = pos + emoji.length;
+}
+
+// 点击其他区域关闭表情面板
+document.addEventListener("click", e => {
+    const panel = document.getElementById("emojiPanel");
+    const btn = document.getElementById("emojiBtn");
+    if (panel.style.display === "block" && e.target !== btn && !panel.contains(e.target)) {
+        panel.style.display = "none";
+    }
+});
+
+// ================================================================
 // 初始化
 // ================================================================
 (function init() {
@@ -431,7 +493,105 @@ async function loadUserAvatar() {
             + "font-size:11px;font-weight:700;flex-shrink:0;";
     });
     loadConversations();
+    buildEmojiGrid();
 })();
+
+// ================================================================
+// 自测功能
+// ================================================================
+let quizChapter = "";
+
+async function openQuiz(chapter) {
+    quizChapter = chapter;
+    try {
+        const r = await fetch(`/api/quiz/${chapter}`);
+        const d = await r.json();
+        if (!d.quiz) { alert("题目加载失败"); return; }
+
+        document.getElementById("quizTitle").textContent = "自测 - " + d.quiz.title;
+        const mcqCount = d.quiz.questions.length;
+        const blanks = d.quiz.blanks || [];
+        document.getElementById("quizBody").innerHTML =
+            // 选择题
+            d.quiz.questions.map((q, i) => `
+            <div class="quiz-q">
+                <div class="quiz-q-title">${i+1}. [选择] ${q.q}</div>
+                <div class="quiz-opts">
+                    ${q.opts.map((opt, j) => `
+                        <label class="quiz-opt">
+                            <input type="radio" name="q${i}" value="${j}"> ${opt}
+                        </label>
+                    `).join("")}
+                </div>
+            </div>
+            `).join("") +
+            // 填空题
+            blanks.map((b, i) => `
+            <div class="quiz-q">
+                <div class="quiz-q-title">${mcqCount + i + 1}. [填空] ${b.q.replace(/____/g, '______')}</div>
+                <input type="text" name="blank${i}" class="blank-input" placeholder="请输入答案" autocomplete="off">
+            </div>
+            `).join("");
+        document.getElementById("quizSubmitBtn").style.display = "";
+        document.getElementById("quizModal").classList.add("show");
+    } catch(e) { alert("加载失败"); }
+}
+
+async function submitQuiz() {
+    const answers = [];
+    const blankAnswers = [];
+    // 选择题
+    const quizQs = document.querySelectorAll(".quiz-q");
+    const mcqCount = quizQs.length - document.querySelectorAll(".blank-input").length;
+    for (let i = 0; i < mcqCount; i++) {
+        const sel = document.querySelector(`input[name="q${i}"]:checked`);
+        answers.push(sel ? parseInt(sel.value) : -1);
+    }
+    // 填空题
+    document.querySelectorAll(".blank-input").forEach(inp => {
+        blankAnswers.push(inp.value.trim());
+    });
+
+    const r = await fetch("/api/quiz/submit", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({user_id: USER_ID, chapter: quizChapter, answers, blankAnswers})
+    });
+    const d = await r.json();
+
+    document.getElementById("quizBody").innerHTML = `
+        <div class="quiz-result">
+            <div class="quiz-score">${d.score} / ${d.total}</div>
+            <div class="quiz-breakdown">选择题 ${d.mcq_score}/${d.mcq_total}  +  填空题 ${d.blank_score}/${d.blank_total}</div>
+            <div class="quiz-msg">${d.score >= d.total ? "全部正确！太棒了！" : d.score >= d.total*0.6 ? "不错！继续加油！" : "多做练习，再接再厉！"}</div>
+            ${d.is_new_best ? '<div class="quiz-best">新纪录！历史最高分已更新</div>' : `<div class="quiz-best">历史最高分: ${d.best}/${d.total}</div>`}
+        </div>
+        <div class="quiz-detail">
+            ${d.mcq_results.map((r, i) => `
+                <div class="qd-item ${r.ok ? 'qd-ok' : 'qd-err'}">
+                    <span class="qd-tag">${r.ok ? '对' : '错'}</span>
+                    <span class="qd-label">选择${i+1}:</span> ${r.q}
+                    ${!r.ok ? `<div class="qd-info">你的答案: ${r.user} | 正确答案: ${r.correct_ans}</div>` : ''}
+                    ${!r.ok ? `<div class="qd-exp">${r.exp}</div>` : ''}
+                </div>
+            `).join("")}
+            ${d.blank_results.map((r, i) => `
+                <div class="qd-item ${r.ok ? 'qd-ok' : 'qd-err'}">
+                    <span class="qd-tag">${r.ok ? '对' : '错'}</span>
+                    <span class="qd-label">填空${i+1}:</span> ${r.q}
+                    ${!r.ok ? `<div class="qd-info">你的答案: ${r.user} | 正确答案: ${r.correct_ans}</div>` : ''}
+                    ${!r.ok ? `<div class="qd-exp">${r.exp}</div>` : ''}
+                </div>
+            `).join("")}
+        </div>
+    `;
+    document.getElementById("quizSubmitBtn").style.display = "none";
+}
+
+function closeQuizModal(e) {
+    if (e && e.target !== document.getElementById("quizModal")) return;
+    document.getElementById("quizModal").classList.remove("show");
+}
 </script>
 </body>
 </html>

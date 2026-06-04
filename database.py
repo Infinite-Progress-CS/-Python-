@@ -45,6 +45,17 @@ def init_db():
             FOREIGN KEY (user_id) REFERENCES users(id)
         );
 
+        CREATE TABLE IF NOT EXISTS quiz_scores (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            chapter TEXT NOT NULL,
+            score INTEGER NOT NULL,
+            total INTEGER NOT NULL,
+            created_at TEXT DEFAULT (datetime('now','localtime')),
+            FOREIGN KEY (user_id) REFERENCES users(id),
+            UNIQUE(user_id, chapter)
+        );
+
         CREATE TABLE IF NOT EXISTS messages (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             conversation_id INTEGER NOT NULL,
@@ -205,6 +216,43 @@ def get_messages(conv_id):
     conn.close()
     return [{"role": r["role"], "content": r["content"],
              "time": r["created_at"]} for r in rows]
+
+
+# ======== 自测成绩 ========
+
+def save_quiz_score(user_id, chapter, score, total):
+    """保存自测成绩，只保留最高分"""
+    conn = get_conn()
+    old = conn.execute(
+        "SELECT score FROM quiz_scores WHERE user_id=? AND chapter=?",
+        (user_id, chapter)
+    ).fetchone()
+    if old:
+        if score > old["score"]:
+            conn.execute(
+                "UPDATE quiz_scores SET score=?, total=?, created_at=datetime('now','localtime') WHERE user_id=? AND chapter=?",
+                (score, total, user_id, chapter)
+            )
+    else:
+        conn.execute(
+            "INSERT INTO quiz_scores (user_id, chapter, score, total) VALUES (?, ?, ?, ?)",
+            (user_id, chapter, score, total)
+        )
+    conn.commit()
+    conn.close()
+    return score
+
+
+def get_quiz_scores(user_id):
+    """获取用户所有自测成绩"""
+    conn = get_conn()
+    rows = conn.execute(
+        "SELECT chapter, score, total, created_at FROM quiz_scores WHERE user_id=? ORDER BY chapter",
+        (user_id,)
+    ).fetchall()
+    conn.close()
+    return [{"chapter": r["chapter"], "score": r["score"],
+             "total": r["total"], "time": r["created_at"]} for r in rows]
 
 
 def get_conversation_owner(conv_id):
